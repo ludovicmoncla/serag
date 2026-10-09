@@ -129,8 +129,10 @@ data/icews18/
 
 The mapping files contain a label and an integer identifier separated by a tab.
 Each split contains subject, relation, object, and timestamp identifiers, plus an
-optional fifth column. See [`data/README.md`](data/README.md) for the detailed data
-layout and licensing notes.
+optional fifth column. ICEWS data are not covered by this project's BSD license:
+their official terms restrict copying and use to research and education and
+prohibit commercial use. See [`data/README.md`](data/README.md) for the detailed
+layout, provenance, citation, and licensing notes.
 
 To validate and summarize the dataset:
 
