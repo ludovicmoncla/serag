@@ -152,6 +152,7 @@ activemq-data/
 .DS_Store
 outputs/
 data/processed/
+data/icews18/*.csv
 .envrc
 .venv
 env/
