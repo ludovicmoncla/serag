@@ -30,7 +30,7 @@ from .evaluation import (
     save_precision_recall_plot,
     save_roc_plot,
 )
-from .model import SeradKG
+from .model import Serag
 from .preparation import load_prepared_experiment
 
 REPEATED_METRICS = (
@@ -203,8 +203,8 @@ def train_model(
     entity_embeddings: torch.Tensor,
     relation_embeddings: torch.Tensor,
     config: TrainingConfig,
-) -> tuple[SeradKG, list[float], list[float], pd.DataFrame]:
-    model = SeradKG(
+) -> tuple[Serag, list[float], list[float], pd.DataFrame]:
+    model = Serag(
         entity_embeddings,
         relation_embeddings,
         compressed_dim=config.compressed_dim,
@@ -347,7 +347,7 @@ def train_model(
 
 
 def evaluate_snapshot(
-    model: SeradKG,
+    model: Serag,
     prepared: PreparedSnapshot,
     entities: Vocabulary,
     relations: Vocabulary,
@@ -448,7 +448,7 @@ def run(config: TrainingConfig) -> pd.DataFrame:
         json.dumps(serializable_config, indent=2), encoding="utf-8"
     )
 
-    print("SERAD-KG — Knowledge Graph Anomaly Detection", flush=True)
+    print("SERAG — Knowledge Graph Anomaly Detection", flush=True)
     print(f"Device: {device}", flush=True)
     print(
         f"Entities: {len(entities.id_to_text):,} | "
@@ -664,7 +664,7 @@ def run_prepared(config: TrainingConfig) -> pd.DataFrame:
     (config.output_dir / "config.json").write_text(
         json.dumps(serializable_config, indent=2), encoding="utf-8"
     )
-    print("SERAD-KG — prepared static-graph experiment", flush=True)
+    print("SERAG — prepared static-graph experiment", flush=True)
     print(f"Prepared data: {config.prepared_data_dir}", flush=True)
     print(f"Device: {device} | examples: {len(prepared.labels):,}", flush=True)
     encoder = SentenceTransformer(config.embedding_model, device=str(device))
@@ -744,7 +744,7 @@ def run_repeated(
     all_results = []
     for run_number, seed in enumerate(unique_seeds, start=1):
         print(
-            f"\nRepeated SERAD-KG run {run_number}/{len(unique_seeds)} — seed {seed}",
+            f"\nRepeated SERAG run {run_number}/{len(unique_seeds)} — seed {seed}",
             flush=True,
         )
         seed_config = replace(
@@ -776,7 +776,7 @@ def run_repeated(
         json.dumps({"seeds": unique_seeds}, indent=2), encoding="utf-8"
     )
 
-    print("\nRepeated SERAD-KG experiment completed", flush=True)
+    print("\nRepeated SERAG experiment completed", flush=True)
     print(f"  Per-seed results: {root_output / 'summary_by_seed.csv'}", flush=True)
     print(f"  Per-snapshot aggregate: {root_output / 'summary_aggregate.csv'}", flush=True)
     print(f"  Overall aggregate: {root_output / 'overall_aggregate.csv'}", flush=True)
@@ -794,7 +794,7 @@ def run_alpha_sweep(
     *,
     resume: bool = False,
 ) -> dict[str, pd.DataFrame]:
-    """Run SERAD-KG for several local/global score weights."""
+    """Run SERAG for several local/global score weights."""
     unique_alphas = list(dict.fromkeys(alphas))
     if len(unique_alphas) < 2:
         raise ValueError("At least two distinct alpha values are required for an alpha sweep")
@@ -807,7 +807,7 @@ def run_alpha_sweep(
 
     for run_number, alpha in enumerate(unique_alphas, start=1):
         print(
-            f"\nSERAD-KG alpha run {run_number}/{len(unique_alphas)} — alpha {alpha:g}",
+            f"\nSERAG alpha run {run_number}/{len(unique_alphas)} — alpha {alpha:g}",
             flush=True,
         )
         alpha_config = replace(
@@ -849,6 +849,6 @@ def run_alpha_sweep(
         aggregate.to_csv(root_output / "alpha_aggregate.csv", index=False)
         results["aggregate"] = aggregate
 
-    print("\nSERAD-KG alpha sweep completed", flush=True)
+    print("\nSERAG alpha sweep completed", flush=True)
     print(f"  Results: {summary_path}", flush=True)
     return results

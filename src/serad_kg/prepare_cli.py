@@ -8,7 +8,7 @@ from .preparation import PreparationConfig, prepare_experiment
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
-        description="Prepare shared, reproducible SERAD-KG/LoGNet experiment splits"
+        description="Prepare shared, reproducible SERAG/LoGNet experiment splits"
     )
     parser.add_argument("--data-dir", type=Path, required=True)
     parser.add_argument("--output-dir", type=Path, required=True)

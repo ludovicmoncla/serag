@@ -15,13 +15,13 @@ def alpha_value(value: str) -> float:
 
 
 def build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(description="Train SERAD-KG anomaly detection on ICEWS18")
+    parser = argparse.ArgumentParser(description="Train SERAG anomaly detection on ICEWS18")
     parser.add_argument("--data-dir", type=Path, required=True)
-    parser.add_argument("--output-dir", type=Path, default=Path("outputs/serad_kg"))
+    parser.add_argument("--output-dir", type=Path, default=Path("outputs/serag"))
     parser.add_argument(
         "--prepared-data-dir",
         type=Path,
-        help="Experiment created by serad-kg-prepare; train one shared static graph",
+        help="Experiment created by serag-prepare; train one shared static graph",
     )
     parser.add_argument("--epochs", type=int, default=300)
     parser.add_argument("--patience", type=int, default=25)

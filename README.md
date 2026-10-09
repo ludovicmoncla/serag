@@ -15,7 +15,7 @@ The methodology and a first implementation of the code were developed by **Antoi
 [Khalid Benabdeslem](http://kbenabde.free.fr/bk/index.php),
 [Rémy Cazabet](https://cazabetremy.fr) and [Yassir Lairgi](https://lairgiyassir.github.io).
 
-![SERAG architecture and experimental pipeline](docs/images/pipeline-overview.png)
+![SERAG architecture: semantic and relational plausibility branches with score fusion](docs/images/serag-architecture.png)
 
 ## Main results
 
@@ -29,13 +29,13 @@ selected on validation AUPRC.
 | Protocol | Method | AUROC | AUPRC | Precision | Recall | F1 |
 |---|---|---:|---:|---:|---:|---:|
 | Pooled | LoGNet | 0.659 ± 0.015 | 0.159 ± 0.010 | 0.152 ± 0.010 | **0.555 ± 0.096** | 0.237 ± 0.013 |
-| Pooled | **SERAG** | **0.786 ± 0.003** | **0.321 ± 0.011** | **0.308 ± 0.016** | 0.451 ± 0.055 | **0.364 ± 0.012** |
 | Pooled | CCA (adapted) | 0.617 ± 0.006 | 0.145 ± 0.003 | 0.135 ± 0.013 | 0.537 ± 0.182 | 0.210 ± 0.004 |
 | Pooled | HVSSE (reproduced) | 0.568 ± 0.017 | 0.125 ± 0.010 | 0.121 ± 0.013 | 0.551 ± 0.171 | 0.194 ± 0.010 |
+| Pooled | **SERAG** | **0.786 ± 0.003** | **0.321 ± 0.011** | **0.308 ± 0.016** | 0.451 ± 0.055 | **0.364 ± 0.012** |
 | Chronological | LoGNet | 0.632 ± 0.018 | 0.146 ± 0.007 | 0.138 ± 0.006 | 0.597 ± 0.147 | 0.223 ± 0.011 |
-| Chronological | **SERAG** | **0.737 ± 0.003** | **0.258 ± 0.008** | **0.262 ± 0.028** | 0.389 ± 0.069 | **0.308 ± 0.008** |
 | Chronological | CCA (adapted) | 0.597 ± 0.005 | 0.142 ± 0.005 | 0.126 ± 0.007 | 0.542 ± 0.120 | 0.203 ± 0.006 |
 | Chronological | HVSSE (reproduced) | 0.525 ± 0.014 | 0.108 ± 0.004 | 0.104 ± 0.002 | **0.699 ± 0.154** | 0.180 ± 0.006 |
+| Chronological | **SERAG** | **0.737 ± 0.003** | **0.258 ± 0.008** | **0.262 ± 0.028** | 0.389 ± 0.069 | **0.308 ± 0.008** |
 
 SERAG obtains the best AUROC, AUPRC, precision, and F1 in both protocols.
 LoGNet is the strongest baseline on ranking and F1. It also obtains the highest
@@ -113,7 +113,9 @@ python -m pip install -e '.[dev]'
 
 ## Data
 
-The commands expect an ICEWS18 directory with the following files:
+ICEWS18 is not distributed with this repository. After reviewing its usage
+terms, download the benchmark files described in [`data/README.md`](data/README.md)
+and place them as follows:
 
 ```text
 data/icews18/
@@ -128,8 +130,8 @@ The mapping files contain a label and an integer identifier separated by a tab.
 Each split contains subject, relation, object, and timestamp identifiers, plus an
 optional fifth column. ICEWS data are not covered by this project's BSD license:
 their official terms restrict copying and use to research and education and
-prohibit commercial use. See [`data/README.md`](data/README.md) for the detailed
-layout, provenance, citation, and licensing notes.
+prohibit commercial use. See [`data/README.md`](data/README.md) for download
+instructions, expected checksums, provenance, citation, and licensing notes.
 
 To validate and summarize the dataset:
 
@@ -156,8 +158,9 @@ serag-prepare \
   --data-dir data/icews18 \
   --output-dir data/processed/icews18/experiments/pooled_30_llm \
   --protocol pooled \
-  --negative-sampling cache \
-  --anomaly-cache-dir data/processed/icews18/llm_anomalies_30 \
+  --negative-sampling genai \
+  --openrouter-model openai/gpt-4.1 \
+  --genai-batch-size 50 \
   --num-snapshots 30 \
   --max-anomaly-ratio 0.20 \
   --evaluation-anomaly-ratio 0.10 \
@@ -173,8 +176,9 @@ serag-prepare \
   --data-dir data/icews18 \
   --output-dir data/processed/icews18/experiments/chronological_30_llm \
   --protocol chronological \
-  --negative-sampling cache \
-  --anomaly-cache-dir data/processed/icews18/llm_anomalies_30 \
+  --negative-sampling genai \
+  --openrouter-model openai/gpt-4.1 \
+  --genai-batch-size 50 \
   --num-snapshots 30 \
   --chronological-train-snapshots 18 \
   --chronological-validation-snapshots 6 \
@@ -188,67 +192,33 @@ root manifest uses 20% training anomalies. Nested `train_ratio_*` directories us
 1%, 2.5%, 5%, and 10%, while sharing the same normal training examples and the
 same validation and test sets.
 
-To regenerate anomalies through OpenRouter instead of using the cache, replace
-`cache` with `genai` and add:
+Set `OPENROUTER_API_KEY` in `.env` before using `genai`. Generation can incur
+API costs and may vary as hosted models change. If generation is interrupted,
+rerun the same command with `--resume-genai`; accepted batches are checkpointed
+and reused.
+
+The exact anomaly cache used for the reported results is not distributed
+because it contains derived ICEWS labels. If you have an authorized local copy,
+replace `genai` with `cache` and add:
 
 ```text
---openrouter-model openai/gpt-4.1 --genai-batch-size 50
+--anomaly-cache-dir data/processed/icews18/llm_anomalies_30
 ```
-
-Set `OPENROUTER_API_KEY` in `.env`. Generation can incur API costs. If it is
-interrupted, rerun the same command with `--resume-genai`; accepted batches are
-checkpointed and reused.
 
 ### 2. Run the repeated experiments
 
-The reproducible CPU scripts use seeds 41–45, validation-AUPRC checkpoint
-selection, 300 maximum epochs for SERAG and LoGNet, patience 25, dynamic score
-normalization, no edge masking, no ranking loss, and no saved model weights.
-Metrics, per-example scores, histories, plots, configurations, and execution
-times are retained. CCA uses at most 20 epochs and HVSSE at most 200 epochs.
+The reported runs use seeds 41–45, validation-AUPRC checkpoint selection, 300
+maximum epochs for SERAG and LoGNet, patience 25, dynamic score normalization,
+no edge masking, no ranking loss, and no saved model weights. CCA uses at most
+20 epochs and HVSSE at most 200 epochs.
 
-The generic sweep scripts below reproduce the pooled 30-snapshot results. They
-also retain the earlier `chronological_llm` 10-snapshot experiment for backward
-compatibility; use the dedicated launcher shown afterwards for the current
-30-snapshot chronological results.
-
-```bash
-# SERAG, alpha = 0.5, training ratios 1%, 2.5%, 5%, and 20%
-./scripts/run_serag_llm_ratios_cpu.sh
-
-# LoGNet, training ratios 1%, 2.5%, 5%, and 20%
-./scripts/run_lognet_llm_ratios_cpu.sh
-```
-
-The 10% runs are separate because they were also used for the alpha study:
-
-```bash
-# SERAG, alpha values 0, 0.25, 0.5, 0.75, 0.85, 0.95, and 1.0
-./scripts/run_serag_llm_cpu.sh
-
-# LoGNet
-./scripts/run_lognet_llm_cpu.sh
-```
-
-To prepare and rerun the current 30-snapshot chronological study, use the
-dedicated resumable launcher. It evaluates SERAG and LoGNet at all five
-training-anomaly ratios, runs the SERAG alpha sweep at 10%, and evaluates CCA
-and HVSSE for the main 10% comparison:
-
-```bash
-caffeinate -i ./scripts/run_chronological_30_llm_cpu.sh
-```
-
-It writes the prepared manifests to `chronological_30_llm` and results to
-`outputs/cpu_llm_chronological_30`, leaving the former 10-snapshot runs intact.
-The main tables in this README and the analysis notebook use these outputs.
-
-The ratio-sweep scripts support resumption: completed seeds are skipped with
-`--resume`. On macOS, `caffeinate -i` can keep the machine awake during a long run:
-
-```bash
-caffeinate -i ./scripts/run_serag_llm_ratios_cpu.sh
-```
+All experiment entry points support repeated runs through `--seeds`; add
+`--resume` to reuse completed seeds whose configurations and manifests still
+match. To evaluate another training-anomaly ratio, point
+`--prepared-data-dir` at the corresponding `train_ratio_*` directory. The root
+prepared-data directory contains the 20% training split. SERAG additionally
+accepts `--alphas` for an alpha sweep. The commands below show a complete 10%
+configuration.
 
 ## Running one configuration
 
@@ -285,6 +255,8 @@ lognet-train \
 ```
 
 Pass `--resume` to preserve completed seeds when restarting a repeated run.
+Replace `--alpha 0.5` with
+`--alphas 0 0.25 0.5 0.75 0.85 0.95 1` to reproduce the SERAG alpha study.
 
 ### CCA and HVSSE research baselines
 
@@ -314,18 +286,6 @@ entity descriptions that ICEWS18 does not provide, while no public HVSSE code wa
 found. Their provenance, retained components, leakage controls, computational
 cost, and comparability limits are documented in
 [`docs/cca-hvsse-baselines.md`](docs/cca-hvsse-baselines.md).
-
-To run both methods on the exact LLM-anomaly manifests used for the
-LoGNet/SERAG ratio study (1%, 2.5%, 5%, 10%, and 20% training anomalies),
-with five seeds per configuration:
-
-```bash
-./scripts/run_cca_hvsse_llm_cpu.sh
-```
-
-The script supports seed-level resumption and writes one combined comparison
-with the existing LoGNet and SERAG results per ratio to
-`outputs/cpu_llm_cca_hvsse/comparison_ratio_<ratio>.csv`.
 
 ## Model and training
 

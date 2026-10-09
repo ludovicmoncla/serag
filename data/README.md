@@ -4,16 +4,31 @@ This directory separates datasets and generated artifacts from the source code.
 
 ## `icews18/`
 
-The SERAG pipeline expects the following ICEWS18 benchmark files:
+ICEWS18 is not distributed with this repository. The SERAG pipeline expects the
+following benchmark files to be supplied locally:
 
 - `entity2id.txt`: mapping from entity labels to integer identifiers;
 - `relation2id.txt`: mapping from relation labels to integer identifiers;
 - `train.txt`, `valid.txt`, and `test.txt`: temporal knowledge-graph splits.
 
+Download these files from the
+[ICEWS18 directory in the authors' RE-Net repository](https://github.com/INK-USC/RE-Net/tree/master/data/ICEWS18)
+after reviewing the ICEWS terms below, then place them under `data/icews18/`.
+The expected SHA-256 checksums for the benchmark variant used in the reported
+experiments are:
+
+| File | SHA-256 |
+|---|---|
+| `entity2id.txt` | `7d247def04f9e0a70b986da665fce498ef2057779842dd83af1df3df5c5e6d74` |
+| `relation2id.txt` | `6099be14a4bb517019146818704858af040843df4caa77b816552223330dcb49` |
+| `train.txt` | `019cfba096e15abae04e8d8d6f4dbeda2add15f53826681702f25298a9fbc7bf` |
+| `valid.txt` | `aa9966e928768ad3a9fd28c7fe2c078458ec1caa523fc0ddf9d0a38ece349c50` |
+| `test.txt` | `a00d46f993557cf78a8823b0c3a7b3b135f40ffa74150ee8f795794e2b536e33` |
+
 The pipeline reads `train.txt` and creates train, validation, and test subsets
 independently for each temporal snapshot. The original `valid.txt` and
-`test.txt` files are retained for future experiments using the official
-benchmark splits.
+`test.txt` files can be retained locally for future experiments using the
+official benchmark splits.
 
 Run `serag-describe-data` from the repository root to validate all three files
 and generate readable tables, descriptive statistics, and the degree-

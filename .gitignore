@@ -152,6 +152,7 @@ activemq-data/
 .DS_Store
 outputs/
 data/processed/
+data/icews18/*.txt
 data/icews18/*.csv
 .envrc
 .venv
@@ -226,3 +227,6 @@ outputs/
 results/
 internship-work/
 latex*/
+
+# Local experiment launchers and result-collection helpers
+scripts/

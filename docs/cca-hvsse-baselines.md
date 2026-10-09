@@ -10,7 +10,7 @@ that produced the published results.
 | Method | Authors' code | Implementation in this repository |
 |---|---|---|
 | CCA | [Official repository](https://github.com/nju-websoft/CCA), GPL-3.0 | Independent reimplementation under the project's BSD license |
-| HVSSE | No public repository identified as of October 6, 2026 | Independent reproduction based on the paper |
+| HVSSE | No verifiable public repository found | Independent reproduction based on the paper |
 
 The official CCA code cannot be reused directly here. It targets FB15K-237 and
 WN18RR, requires textual entity descriptions, pretrains a dataset-specific
@@ -54,28 +54,9 @@ prevents future-information leakage in the chronological protocol.
 
 ## Running the baselines
 
-After an editable installation (`python -m pip install -e .`), run:
-
-```bash
-./scripts/run_cca_hvsse_llm_cpu.sh
-```
-
-This launcher runs CCA and then HVSSE on `pooled_30_llm` and
-`chronological_llm`, using training-anomaly ratios of 1%, 2.5%, 5%, 10%, and
-20% and seeds 41–45. It reuses the exact manifests from the main experiments
-and skips seeds that have already completed. The 20% ratio uses each
-experiment's root manifest, consistently with the LoGNet and SERAG launchers.
-The script produces one comparison file per ratio:
-
-```text
-outputs/cpu_llm_cca_hvsse/comparison_ratio_<ratio>.csv
-```
-
-Each table contains test AUROC, AUPRC, precision, recall, and F1 for LoGNet,
-SERAG (`alpha = 0.5`), CCA, and HVSSE whenever their aggregate result files are
-available.
-
-Equivalent commands for individual runs are:
+After an editable installation (`python -m pip install -e .`) and preparation
+of a shared manifest, run the baselines directly through their command-line
+entry points:
 
 ```bash
 cca-train \

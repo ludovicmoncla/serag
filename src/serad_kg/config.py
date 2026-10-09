@@ -9,7 +9,7 @@ import torch
 @dataclass(frozen=True)
 class TrainingConfig:
     data_dir: Path
-    output_dir: Path = Path("outputs/serad_kg")
+    output_dir: Path = Path("outputs/serag")
     prepared_data_dir: Path | None = None
     embedding_model: str = "sentence-transformers/all-MiniLM-L6-v2"
     compressed_dim: int = 64

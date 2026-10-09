@@ -47,7 +47,7 @@ def pairwise_ranking_loss(
     return functional.softplus(margin - score_difference).mean()
 
 
-class SeradKG(nn.Module):
+class Serag(nn.Module):
     """Combine semantic triple scoring with R-GCN/TransE graph scoring."""
 
     def __init__(
@@ -232,3 +232,7 @@ class SeradKG(nn.Module):
                 "score": combined.detach().cpu().numpy(),
             }
         )
+
+
+# Kept so that existing notebooks and checkpoints importing SeradKG still load.
+SeradKG = Serag
