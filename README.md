@@ -15,7 +15,38 @@ The methodology and a first implementation of the code were developed by **Antoi
 [Khalid Benabdeslem](http://kbenabde.free.fr/bk/index.php),
 [Rémy Cazabet](https://cazabetremy.fr) and [Yassir Lairgi](https://lairgiyassir.github.io).
 
+## Method overview
+
+Given a candidate triple `(subject, relation, object)`, SERAG learns a
+plausibility score: coherent facts should receive high scores and anomalous
+facts low scores. The three labels are encoded separately with a frozen
+`sentence-transformers/all-MiniLM-L6-v2` model. These shared text embeddings
+feed two complementary branches:
+
+- The **semantic branch** concatenates the ordered subject, relation, and object
+  embeddings with subject–object difference and element-wise interaction
+  features. A multilayer perceptron maps this representation to a semantic
+  plausibility score.
+- The **relational branch** projects entity embeddings to 64 dimensions and
+  propagates information through one R-GCN layer over normal training edges
+  only. A dimension-normalized TransE score then measures compatibility between
+  the neighborhood-aware subject and object representations and the relation.
+
+Because the branches produce scores on different scales, each score is
+standardized with training-set statistics and aligned with a learned affine
+transformation. Their weighted sum produces the final score, with `alpha`
+controlling the semantic contribution. The model is trained with observed
+events as normal examples and vocabulary-constrained, LLM-generated triples as
+synthetic anomalies. A decision threshold is selected on validation anomaly
+F1. Although the data are divided into temporal snapshots, SERAG itself is a
+static scorer and does not explicitly model temporal consistency.
+
 ![SERAG architecture: semantic and relational plausibility branches with score fusion](docs/images/serag-architecture.png)
+
+*Figure 1 — SERAG architecture. Frozen text embeddings feed a semantic scorer
+and an R-GCN/TransE relational scorer. The two standardized and aligned scores
+are combined by weighted fusion; lower final scores indicate more anomalous
+triples. Relation projection and training losses are omitted for clarity.*
 
 ## Main results
 
