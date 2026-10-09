@@ -14,6 +14,12 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--epochs", type=int, default=300)
     parser.add_argument("--patience", type=int, default=25)
     parser.add_argument("--min-delta", type=float, default=1e-5)
+    parser.add_argument(
+        "--checkpoint-metric",
+        choices=("auprc", "loss"),
+        default="auprc",
+        help="Validation metric used for checkpoint selection and early stopping",
+    )
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--seeds", type=int, nargs="+")
     parser.add_argument("--device", default="auto")
@@ -40,6 +46,7 @@ def main() -> None:
         epochs=args.epochs,
         patience=args.patience,
         min_delta=args.min_delta,
+        checkpoint_metric=args.checkpoint_metric,
         seed=args.seed,
         device=args.device,
         save_model=args.save_model,
