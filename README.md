@@ -1,6 +1,4 @@
-# SERAG
-
-**SE**mantic–**R**elational **A**nomaly Detection in Knowledge **G**raphs
+# SERAG - SEmantic–Relational Anomaly Detection in Knowledge Graphs
 
 SERAG detects anomalous events in temporal knowledge graphs by combining two
 complementary views of a triple:
