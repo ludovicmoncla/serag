@@ -5,11 +5,13 @@ import json
 import time
 from dataclasses import asdict, dataclass, replace
 from pathlib import Path
+from typing import Literal
 
 import pandas as pd
 import torch
 
 from ..data import PreparedSnapshot, load_vocabulary
+from ..evaluation import anomaly_auprc
 from ..pipeline import (
     aggregate_repeated_metrics,
     evaluate_snapshot,
@@ -33,6 +35,7 @@ class LogNetConfig:
     epochs: int = 300
     patience: int = 25
     min_delta: float = 1e-5
+    checkpoint_metric: Literal["auprc", "loss"] = "auprc"
     seed: int = 42
     device: str = "auto"
     save_model: bool = True
@@ -40,6 +43,8 @@ class LogNetConfig:
     def __post_init__(self) -> None:
         if self.min_delta < 0.0:
             raise ValueError("min_delta must be non-negative")
+        if self.checkpoint_metric not in {"auprc", "loss"}:
+            raise ValueError("checkpoint_metric must be 'auprc' or 'loss'")
 
     def resolved_device(self) -> torch.device:
         if self.device != "auto":
@@ -53,7 +58,7 @@ class LogNetConfig:
 
 def train_model(
     prepared: PreparedSnapshot, num_entities: int, num_relations: int, config: LogNetConfig
-) -> tuple[LoGNet, list[float], list[float]]:
+) -> tuple[LoGNet, list[float], list[float], pd.DataFrame]:
     graph_mask = prepared.train_mask & prepared.labels.eq(1)
     edges = build_line_graph_edges(prepared.triples_numpy, graph_mask.detach().cpu().numpy()).to(
         prepared.triples.device
@@ -71,9 +76,12 @@ def train_model(
     )
     train_losses: list[float] = []
     validation_losses: list[float] = []
-    best_loss = float("inf")
+    history: list[dict[str, float | int]] = []
+    best_value = float("-inf") if config.checkpoint_metric == "auprc" else float("inf")
+    best_epoch = 0
     best_weights = None
     epochs_without_improvement = 0
+    stopped_early = False
     for epoch in range(1, config.epochs + 1):
         model.train()
         optimizer.zero_grad()
@@ -85,27 +93,59 @@ def train_model(
         train_losses.append(float(train_loss.detach()))
         model.eval()
         with torch.no_grad():
-            validation_loss, _ = model(
+            validation_loss, validation_scores = model(
                 prepared.graph, prepared.triples, prepared.labels, prepared.validation_mask
             )
         validation_losses.append(float(validation_loss))
-        if validation_losses[-1] < best_loss - config.min_delta:
-            best_loss = validation_losses[-1]
+        validation_auprc = anomaly_auprc(
+            prepared.labels[prepared.validation_mask].detach().cpu().numpy(),
+            validation_scores[prepared.validation_mask].detach().cpu().numpy(),
+        )
+        history.append(
+            {
+                "epoch": epoch,
+                "train_loss": train_losses[-1],
+                "validation_loss": validation_losses[-1],
+                "validation_auprc": validation_auprc,
+            }
+        )
+        current_value = (
+            validation_auprc
+            if config.checkpoint_metric == "auprc"
+            else validation_losses[-1]
+        )
+        improved = (
+            current_value > best_value + config.min_delta
+            if config.checkpoint_metric == "auprc"
+            else current_value < best_value - config.min_delta
+        )
+        if improved:
+            best_value = current_value
+            best_epoch = epoch
             best_weights = copy.deepcopy(model.state_dict())
             epochs_without_improvement = 0
         else:
             epochs_without_improvement += 1
             if epochs_without_improvement >= config.patience:
+                stopped_early = True
                 break
         if epoch == 1 or epoch % 10 == 0:
             print(
                 f"  Epoch {epoch:03d}/{config.epochs:03d} — train loss: "
-                f"{train_losses[-1]:.4f} — validation loss: {validation_losses[-1]:.4f}",
+                f"{train_losses[-1]:.4f} — validation loss: {validation_losses[-1]:.4f} — "
+                f"validation AUPRC: {validation_auprc:.4f}",
                 flush=True,
             )
     if best_weights is not None:
         model.load_state_dict(best_weights)
-    return model, train_losses, validation_losses
+    status = "Early stopping" if stopped_early else "Training completed"
+    metric_label = "validation AUPRC" if config.checkpoint_metric == "auprc" else "validation loss"
+    print(
+        f"  {status} after {len(train_losses)} epochs "
+        f"(best {metric_label}: {best_value:.4f} at epoch {best_epoch})",
+        flush=True,
+    )
+    return model, train_losses, validation_losses, pd.DataFrame(history)
 
 
 def run(config: LogNetConfig) -> pd.DataFrame:
@@ -131,9 +171,10 @@ def run(config: LogNetConfig) -> pd.DataFrame:
     print("LoGNet — prepared static-graph experiment", flush=True)
     print(f"Prepared data: {config.prepared_data_dir}", flush=True)
     print(f"Device: {device} | examples: {len(prepared.labels):,}", flush=True)
-    model, train_losses, validation_losses = train_model(
+    model, train_losses, validation_losses, history = train_model(
         prepared, len(entities.id_to_text), len(relations.id_to_text), config
     )
+    history.to_csv(config.output_dir / "training_history.csv", index=False)
     metrics = evaluate_snapshot(
         model,
         prepared,
