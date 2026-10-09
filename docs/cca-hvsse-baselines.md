@@ -1,85 +1,81 @@
-# Baselines CCA et HVSSE
+# CCA and HVSSE baselines
 
-## Statut des implémentations
+## Implementation status
 
-Ces deux baselines utilisent les mêmes `manifest.csv`, partitions, graines,
-métriques et règle de sélection du seuil que SERAG et LoGNet. Elles sont
-cependant des **adaptations au protocole ICEWS18**, et non des copies certifiées
-des programmes ayant produit les résultats publiés.
+These two baselines use the same `manifest.csv` files, splits, seeds, metrics,
+and threshold-selection rule as SERAG and LoGNet. They are, however,
+**adaptations to the ICEWS18 protocol**, not certified copies of the programs
+that produced the published results.
 
-| Méthode | Code des auteurs | Implémentation dans ce dépôt |
+| Method | Authors' code | Implementation in this repository |
 |---|---|---|
-| CCA | [Dépôt officiel](https://github.com/nju-websoft/CCA), GPL-3.0 | Réimplémentation indépendante sous la licence BSD du projet |
-| HVSSE | Aucun dépôt public identifié au 6 octobre 2026 | Reproduction indépendante à partir de l'article |
+| CCA | [Official repository](https://github.com/nju-websoft/CCA), GPL-3.0 | Independent reimplementation under the project's BSD license |
+| HVSSE | No public repository identified as of October 6, 2026 | Independent reproduction based on the paper |
 
-Le code officiel CCA n'est pas directement réutilisable ici. Il cible
-FB15K-237 et WN18RR, demande les descriptions textuelles des entités, préentraîne
-un BERT propre au jeu de données, fixe plusieurs choix dans le code (dont le
-ratio de bruit à 5 %) et annonce PyTorch 1.10.2 et Transformers 4.11.3. Copier ce
-code GPL-3.0 dans le projet BSD poserait en outre une contrainte de licence. La
-présente version a donc été écrite indépendamment.
+The official CCA code cannot be reused directly here. It targets FB15K-237 and
+WN18RR, requires textual entity descriptions, pretrains a dataset-specific
+BERT model, hard-codes several choices (including a 5% noise ratio), and lists
+PyTorch 1.10.2 and Transformers 4.11.3 as dependencies. Copying GPL-3.0 code
+into this BSD-licensed project would also introduce a license incompatibility.
+The implementation in this repository was therefore written independently.
 
-L'article HVSSE est publié dans une revue à accès fermé et aucune implémentation
-publique vérifiable n'a été trouvée. Les détails non spécifiés publiquement sont
-des choix de reproduction documentés par les options de ligne de commande.
+The HVSSE paper is published in a subscription journal, and no verifiable
+public implementation was found. Details that are not specified in the public
+paper are documented reproduction choices exposed as command-line options.
 
-## Ce qui est reproduit
+## Reproduced components
 
-CCA conserve les idées centrales suivantes :
+The CCA adaptation retains the following core ideas:
 
-- reconstruction de la tête et de la queue depuis une vue textuelle et une vue
-  structurelle ;
-- contraste interactif entre les deux espaces ;
-- fusion des erreurs de reconstruction et du désaccord entre vues ;
-- confiance adaptative, recalculée sans utiliser les étiquettes d'entraînement.
+- head and tail reconstruction from textual and structural views;
+- interactive contrast between the two spaces;
+- fusion of reconstruction errors and cross-view disagreement;
+- adaptive confidence recomputed without training labels.
 
-ICEWS18 ne fournit pas les descriptions d'entités nécessaires au BERT de
-l'article. Par défaut, la vue textuelle encode donc les libellés avec le même
-Sentence-Transformer que SERAG. Un fichier optionnel
-`--entity-descriptions-file`, au format TSV sans en-tête
-`entity_id<TAB>description`, permet d'ajouter des descriptions.
+ICEWS18 does not provide the entity descriptions required by the BERT model in
+the original paper. By default, the textual view therefore encodes entity
+labels with the same Sentence Transformer used by SERAG. An optional
+`--entity-descriptions-file`, formatted as headerless TSV with
+`entity_id<TAB>description`, can supply additional descriptions.
 
-HVSSE conserve :
+The HVSSE reproduction retains:
 
-- les vues positives et négatives fondées sur la cooccurrence des entités en
-  position tête et queue ;
-- un encodeur BiLSTM des triplets ;
-- un Transformer de graphe parcimonieux enrichi par le degré tête/queue et le
-  type d'adjacence ;
-- une perte contrastive multi-vues et une perte translationnelle de type
-  TransE ;
-- une confiance combinant cohérence translationnelle et cohérence des vues.
+- positive and negative views based on entity co-occurrence in head and tail
+  positions;
+- a BiLSTM triple encoder;
+- a sparse graph transformer enriched with head/tail degree and adjacency type;
+- a multi-view contrastive loss and a TransE-style translational loss;
+- a confidence score combining translational and cross-view consistency.
 
-Pour les deux méthodes, seules les observations d'entraînement peuvent fournir
-du contexte structurel. Une observation de validation ou de test peut consulter
-ses voisines d'entraînement, mais ne devient jamais la voisine d'une autre
-observation. Cette convention évite une fuite du futur dans le protocole
-chronologique.
+For both methods, structural context is derived only from training
+observations. A validation or test observation may consult its training
+neighbors, but it never becomes a neighbor of another observation. This rule
+prevents future-information leakage in the chronological protocol.
 
-## Exécution
+## Running the baselines
 
-Après une installation éditable (`python -m pip install -e .`) :
+After an editable installation (`python -m pip install -e .`), run:
 
 ```bash
 ./scripts/run_cca_hvsse_llm_cpu.sh
 ```
 
-Ce lanceur exécute CCA puis HVSSE sur `pooled_30_llm` et
-`chronological_llm`, avec 1 %, 2,5 %, 5 %, 10 % et 20 % d'anomalies
-d'entraînement et les graines 41 à 45. Il réutilise exactement les manifests des
-expériences principales et reprend les graines déjà terminées. Le ratio 20 %
-utilise le manifeste racine de chaque expérience, conformément aux lanceurs
-LoGNet et SERAG. Le script produit un fichier par ratio :
+This launcher runs CCA and then HVSSE on `pooled_30_llm` and
+`chronological_llm`, using training-anomaly ratios of 1%, 2.5%, 5%, 10%, and
+20% and seeds 41–45. It reuses the exact manifests from the main experiments
+and skips seeds that have already completed. The 20% ratio uses each
+experiment's root manifest, consistently with the LoGNet and SERAG launchers.
+The script produces one comparison file per ratio:
 
 ```text
 outputs/cpu_llm_cca_hvsse/comparison_ratio_<ratio>.csv
 ```
 
-Chaque tableau rassemble AUROC, AUPRC, précision, rappel et F1 de test pour
-LoGNet, SERAG (`alpha = 0.5`), CCA et HVSSE lorsque leurs fichiers agrégés
-sont disponibles.
+Each table contains test AUROC, AUPRC, precision, recall, and F1 for LoGNet,
+SERAG (`alpha = 0.5`), CCA, and HVSSE whenever their aggregate result files are
+available.
 
-Les commandes individuelles équivalentes sont :
+Equivalent commands for individual runs are:
 
 ```bash
 cca-train \
@@ -99,42 +95,40 @@ hvsse-train \
   --seeds 41 42 43 44 45
 ```
 
-CCA calcule une distribution sur les 23 033 entités pour chaque reconstruction.
-Il est donc nettement plus coûteux que LoGNet sur CPU. Une GPU est recommandée
-pour les expériences complètes. `--score-batch-size` permet de contrôler la
-mémoire utilisée lors de l'évaluation.
+CCA computes a distribution over all 23,033 entities for each reconstruction,
+so it is substantially more expensive than LoGNet on a CPU. A GPU is
+recommended for complete experiments. Use `--score-batch-size` to control
+memory consumption during evaluation.
 
-## Interprétation de la comparaison
+## Interpreting the comparison
 
-Les scores produits dans ce dépôt sont directement comparables **dans le
-protocole adapté** : mêmes exemples, mêmes partitions, même classe positive pour
-l'AUPRC, même sélection du seuil sur validation et aucune optimisation sur le
-test.
+Scores produced in this repository are directly comparable **within the
+adapted protocol**: the methods use the same examples, splits, positive class
+for AUPRC, validation-based threshold selection, and no test-set optimization.
 
-Ils ne constituent pas une reproduction directe des tableaux des articles :
+They are not direct reproductions of the papers' published tables:
 
-- les articles étudient des graphes statiques (notamment FB15K-237 et WN18RR
-  pour CCA ; FB15K-237, WN18RR, NELL-995, FB15K et UMLS pour HVSSE), alors que
-  ce projet agrège ou ordonne temporellement ICEWS18 ;
-- CCA emploie à l'origine des descriptions d'entités et un BERT préentraîné sur
-  le jeu de données ; cette information n'existe pas dans ICEWS18 ;
-- les articles entraînent leurs détecteurs de manière non supervisée sur un KG
-  bruité et rapportent principalement des mesures top-k, tandis que SERAG et
-  LoGNet utilisent les anomalies étiquetées du train ;
-- les anomalies LLM du projet ne suivent pas exactement les bruits aléatoire,
-  sémantiquement similaire et adversarial de CCA, ni le protocole de corruption
-  de HVSSE.
+- the papers study static graphs (notably FB15K-237 and WN18RR for CCA, and
+  FB15K-237, WN18RR, NELL-995, FB15K, and UMLS for HVSSE), whereas this project
+  aggregates or chronologically orders ICEWS18;
+- CCA originally uses entity descriptions and a BERT model pretrained on the
+  dataset; ICEWS18 does not provide this information;
+- the papers train their detectors without supervision on a noisy knowledge
+  graph and mainly report top-k metrics, whereas SERAG and LoGNet use labeled
+  training anomalies;
+- this project's LLM-generated anomalies do not exactly match CCA's random,
+  semantically similar, and adversarial noise or HVSSE's corruption protocol.
 
-La comparaison la plus honnête consiste donc à présenter deux tableaux :
+The most transparent presentation therefore uses two separate tables:
 
-1. les résultats de toutes les méthodes sur les manifests communs, en indiquant
-   le budget de supervision propre à chacune ;
-2. séparément, une reproduction sur les jeux et types de bruit originaux si les
-   données et descriptions nécessaires sont ajoutées.
+1. results for all methods on the shared manifests, with each method's
+   supervision budget stated explicitly;
+2. a separate reproduction on the original datasets and noise types if the
+   required data and entity descriptions are added.
 
-## Références
+## References
 
-- Xiangyu Liu, Yang Liu et Wei Hu, [*Knowledge Graph Error Detection with
+- Xiangyu Liu, Yang Liu, and Wei Hu, [*Knowledge Graph Error Detection with
   Contrastive Confidence Adaption*](https://arxiv.org/abs/2312.12108), AAAI 2024.
 - Xinyue Xue et al., [*Heterogeneous Views and Spatial Structure Enhancement for
   triple error detection*](https://doi.org/10.1016/j.eswa.2024.124938), Expert
