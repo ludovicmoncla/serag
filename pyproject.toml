@@ -3,7 +3,7 @@ requires = ["setuptools>=69"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "bert-rgcn"
+name = "serag"
 version = "0.1.0"
 description = "Anomaly detection in temporal knowledge graphs with semantic and relational graph representations."
 readme = "README.md"
@@ -17,6 +17,7 @@ dependencies = [
   "openai>=1.0",
   "python-dotenv>=1.0",
   "scikit-learn>=1.4",
+  "scipy>=1.10",
   "sentence-transformers>=3.0",
   "torch>=2.2",
   "torch-geometric>=2.5",
@@ -26,8 +27,16 @@ dependencies = [
 dev = ["pytest>=8.0", "ruff>=0.6"]
 
 [project.scripts]
-bert-rgcn-train = "bert_rgcn.cli:main"
-bert-rgcn-describe-data = "bert_rgcn.describe_cli:main"
+serag-train = "serad_kg.cli:main"
+serag-describe-data = "serad_kg.describe_cli:main"
+serag-prepare = "serad_kg.prepare_cli:main"
+# Compatibility aliases for experiments and environments created before the rename.
+serad-kg-train = "serad_kg.cli:main"
+serad-kg-describe-data = "serad_kg.describe_cli:main"
+serad-kg-prepare = "serad_kg.prepare_cli:main"
+lognet-train = "serad_kg.baselines.lognet_cli:main"
+cca-train = "serad_kg.baselines.cca_cli:main"
+hvsse-train = "serad_kg.baselines.hvsse_cli:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
