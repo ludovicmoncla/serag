@@ -10,8 +10,7 @@ The repository also contains a reproducible implementation of **LoGNet**, plus
 protocol-compatible research adaptations of **CCA** and **HVSSE**, as well as the
 complete data-preparation and repeated-evaluation workflow used for ICEWS18.
 
-The methodology and code were developed by **Antoine Salazar** during his
-final-year internship at LIRIS, under the supervision of
+The methodology and a first implementation of the code were developed by **Antoine Salazar** during his final-year internship at LIRIS, under the supervision of
 [Ludovic Moncla](https://ludovicmoncla.github.io),
 [Khalid Benabdeslem](http://kbenabde.free.fr/bk/index.php),
 [Rémy Cazabet](https://cazabetremy.fr) and [Yassir Lairgi](https://lairgiyassir.github.io).
